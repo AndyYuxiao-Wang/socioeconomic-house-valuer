@@ -1,0 +1,5 @@
+body { font-family: Arial, sans-serif; margin: 20px; }
+h1 { color: #2c3e50; }
+.input-form { margin-bottom: 20px; }
+.input-form label { display: block; margin: 5px 0; }
+.result { margin: 20px 0; font-size: 1.2em; }
