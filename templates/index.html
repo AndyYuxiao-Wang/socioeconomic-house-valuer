@@ -2,299 +2,389 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>House Price Predictor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Roboto+Condensed:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
+        :root {
+            --accent: #1656d1;
+            --accent-dark: #0c3fa0;
+            --bg: #ffffff;
+            --panel: #ffffff;
+            --line: #dcdce2;
+            --text-1: #1a1a1e;
+            --text-2: #4a4a52;
+            --text-3: #7a7a84;
+            --font-head: "Archivo Black", "Arial Black", sans-serif;
+            --font-body: "Roboto Condensed", "Arial Narrow", Arial, sans-serif;
+            --font-mono: "Roboto Mono", "Consolas", monospace;
+        }
+
+        * { box-sizing: border-box; }
+
         body {
-            font-family: Arial, sans-serif;
-            background: #f4f4f9;
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--text-1);
             margin: 0;
-            padding: 20px;
+            padding: 32px 20px 60px;
+        }
+
+        .page {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header h1 {
+            font-family: var(--font-head);
+            font-size: clamp(22px, 4vw, 30px);
+            margin: 0 0 6px;
+        }
+
+        header p {
+            color: var(--text-2);
+            margin: 0 0 28px;
+            font-size: 15px;
+            line-height: 1.5;
         }
 
         .dashboard {
             display: flex;
             gap: 20px;
-            max-width: 1600px;
-            margin: 0 auto;
+            align-items: flex-start;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 24px;
         }
 
         .control-panel {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 15px rgba(0,0,0,0.1);
-            width: 350px;
-            height: fit-content;
+            width: 340px;
+            flex-shrink: 0;
         }
 
         .map-panel {
             flex: 1;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 15px rgba(0,0,0,0.1);
+            min-width: 0;
         }
 
-        h2, h3 {
-            margin-top: 0;
-            color: #333;
+        .about {
+            max-width: 640px;
+            margin-top: 20px;
         }
 
-        input, select, button {
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-2);
+            margin: 16px 0 6px;
+        }
+
+        label:first-of-type { margin-top: 0; }
+
+        input, select {
             width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            box-sizing: border-box;
+            padding: 10px 12px;
+            font-family: var(--font-body);
+            font-size: 15px;
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            background: #fff;
+            color: var(--text-1);
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .hint {
+            color: var(--text-3);
+            font-size: 12px;
+            margin-top: 4px;
         }
 
         button {
-            background: #007bff;
-            color: white;
+            width: 100%;
+            margin-top: 20px;
+            padding: 12px;
+            font-family: var(--font-body);
+            font-weight: 700;
+            font-size: 15px;
+            letter-spacing: 0.02em;
+            color: #fff;
+            background: var(--accent);
             border: none;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        button:hover {
-            background: #0056b3;
-        }
-
-        .map-container {
-            position: relative;
-        }
-
-        #lsoa-map {
-            height: 600px;
-            border-radius: 5px;
-            z-index: 1;
-        }
-
-        #property-map {
-            height: 300px;
-            border-radius: 5px;
-            margin-top: 20px;
-        }
-
-        .layer-control {
-            background: white;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-        }
-
-        .layer-control label {
-            display: block;
-            margin: 5px 0;
+            border-radius: 4px;
             cursor: pointer;
         }
 
-        .result {
-            margin-top: 20px;
-            padding: 15px;
-            background: #e2f0d9;
-            border-radius: 5px;
-            display: none;
-        }
+        button:hover { background: var(--accent-dark); }
 
         .loading {
             display: none;
             text-align: center;
-            margin: 10px 0;
-            color: #007bff;
+            margin-top: 14px;
+            color: var(--text-3);
+            font-size: 13px;
+        }
+
+        .result {
+            display: none;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--line);
+        }
+
+        .result-price {
+            font-family: var(--font-mono);
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .result-range {
+            font-family: var(--font-mono);
+            color: var(--text-2);
+            margin-top: 2px;
+            font-size: 14px;
+        }
+
+        .result-table {
+            margin-top: 16px;
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13.5px;
+        }
+
+        .result-table td {
+            padding: 6px 0;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .result-table td:first-child {
+            color: var(--text-3);
+        }
+
+        .result-table td:last-child {
+            text-align: right;
+            font-family: var(--font-mono);
+        }
+
+        .info-panel {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid var(--line);
+            font-size: 13.5px;
+            color: var(--text-2);
+        }
+
+        .map-panel h2 {
+            font-family: var(--font-head);
+            font-size: 15px;
+            margin: 0 0 14px;
+        }
+
+        .layer-control {
+            display: flex;
+            gap: 18px;
+            padding-bottom: 14px;
+            margin-bottom: 14px;
+            border-bottom: 1px solid var(--line);
+            font-size: 13.5px;
+        }
+
+        .layer-control label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin: 0;
+            font-weight: 400;
+            color: var(--text-1);
+            cursor: pointer;
+        }
+
+        #lsoa-map {
+            height: 560px;
+            border: 1px solid var(--line);
+            border-radius: 4px;
         }
 
         .legend {
-            background: white;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 10px;
-            border: 1px solid #ddd;
+            margin-top: 14px;
+            font-size: 13px;
+        }
+
+        .legend strong {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 12.5px;
+            color: var(--text-2);
         }
 
         .legend-item {
             display: flex;
             align-items: center;
-            margin: 5px 0;
+            margin: 4px 0;
         }
 
         .legend-color {
-            width: 20px;
-            height: 20px;
+            width: 16px;
+            height: 16px;
             margin-right: 8px;
-            border-radius: 3px;
+            border-radius: 2px;
+            border: 1px solid var(--line);
         }
 
-        .info-panel {
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 10px;
+        .about h2 {
+            font-family: var(--font-head);
+            font-size: 15px;
+            margin: 0 0 12px;
+        }
+
+        .about ul {
+            margin: 0;
+            padding-left: 18px;
+            color: var(--text-2);
             font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .about li + li { margin-top: 6px; }
+
+        @media (max-width: 860px) {
+            .dashboard { flex-direction: column; }
+            .control-panel { width: 100%; }
         }
     </style>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
-    <div class="dashboard">
+    <div class="page">
+        <header>
+            <h1>House Price Predictor</h1>
+            <p>Estimates a sale price from a property's characteristics and the socioeconomic
+               profile of its LSOA. Click a shaded area on the map to select its LSOA, or type
+               the code directly.</p>
+        </header>
 
-        <div class="control-panel">
-            <h2>🏠 House Price Predictor</h2>
+        <div class="dashboard">
+            <div class="panel control-panel">
+                <label for="lsoa">LSOA Code</label>
+                <input type="text" id="lsoa" placeholder="e.g. E01000001" required>
 
-            <label for="lsoa">LSOA Code:</label>
-            <input type="text" id="lsoa" placeholder="e.g., E01000001" required>
-            <small style="color: #666; display: block; margin-top: -5px;">
-                Click on map to auto-fill LSOA code
-            </small>
+                <label for="type">Property Type</label>
+                <select id="type" required>
+                    <option value="Detached">Detached</option>
+                    <option value="Semi-Detached">Semi-Detached</option>
+                    <option value="Terrace">Terrace</option>
+                    <option value="Flat">Flat</option>
+                </select>
 
-            <label for="type">Property Type:</label>
-            <select id="type" required>
-                <option value="Detached">Detached</option>
-                <option value="Semi-Detached">Semi-Detached</option>
-                <option value="Terrace">Terrace</option>
-                <option value="Flat">Flat</option>
-            </select>
+                <label for="floor">Floor Area (sq m)</label>
+                <input type="number" id="floor" placeholder="e.g. 100" required min="1">
 
-            <label for="floor">Floor Area (sq m):</label>
-            <input type="number" id="floor" placeholder="e.g., 100" required min="1">
+                <button onclick="predictPrice()">Predict Price</button>
 
-            <button onclick="predictPrice()">Predict Price</button>
+                <div class="loading" id="loading">Loading…</div>
 
-            <div class="loading" id="loading">Loading...</div>
-            <div class="result" id="result"></div>
+                <div class="result" id="result">
+                    <div class="result-price" id="result-price"></div>
+                    <div class="result-range" id="result-range"></div>
+                    <table class="result-table">
+                        <tr><td>Income</td><td id="result-income"></td></tr>
+                        <tr><td>Education (Attainment 8)</td><td id="result-education"></td></tr>
+                        <tr><td>Crime decile</td><td id="result-crime"></td></tr>
+                    </table>
+                </div>
 
-            <div class="info-panel" id="lsoa-info">
-                <strong>Selected LSOA Info:</strong><br>
-                <span id="selected-lsoa-details">Click on map to select LSOA</span>
+                <div class="info-panel" id="lsoa-info">
+                    <strong>Selected LSOA</strong><br>
+                    <span id="selected-lsoa-details">Click the map to select one</span>
+                </div>
+            </div>
+
+            <div class="panel map-panel">
+                <h2>LSOA map — click to select</h2>
+
+                <div class="layer-control">
+                    <span style="color: var(--text-3);">Layer:</span>
+                    <label><input type="radio" name="layer" value="income" checked onchange="updateMapLayer()"> Income</label>
+                    <label><input type="radio" name="layer" value="education" onchange="updateMapLayer()"> Education</label>
+                    <label><input type="radio" name="layer" value="crime" onchange="updateMapLayer()"> Crime decile</label>
+                </div>
+
+                <div id="lsoa-map"></div>
+
+                <div class="legend" id="legend"></div>
             </div>
         </div>
 
-
-        <div class="map-panel">
-            <h3>🗺️ LSOA Map - Click to Select</h3>
-
-            <div class="layer-control">
-                <strong>Display Layer:</strong>
-                <label>
-                    <input type="radio" name="layer" value="income" checked onchange="updateMapLayer()">
-                    💰 Income
-                </label>
-                <label>
-                    <input type="radio" name="layer" value="education" onchange="updateMapLayer()">
-                    📚 Education Score
-                </label>
-                <label>
-                    <input type="radio" name="layer" value="crime" onchange="updateMapLayer()">
-                    🚔 Crime Decile
-                </label>
-            </div>
-
-            <div id="lsoa-map"></div>
-
-            <div class="legend" id="legend"></div>
-
-            <h3></h3>
-            <div id="property-map"></div>
+        <div class="panel about">
+            <h2>How this works</h2>
+            <ul>
+                <li>A Random Forest model, trained on around 17,000 English property sales
+                    from HM Land Registry, matched to floor area from EPC records.</li>
+                <li>Each sale is joined to its LSOA's socioeconomic profile — local income,
+                    school attainment (Attainment 8), employment, health and crime deprivation
+                    from the English Indices of Deprivation.</li>
+                <li>The predicted price and its ±10% range come from that model given the
+                    property type, floor area and the LSOA's own socioeconomic figures — not
+                    from comparable recent sales directly.</li>
+            </ul>
         </div>
     </div>
 
     <script>
-        // Global variables
-        let lsoaMap;
-        let propertyMap;
-
-        let lsoaLayer;
+        let lsoaMap, lsoaLayer;
         let socioData = {};
         let dataStats = {};
         let currentLayer = 'income';
-        let selectedLsoa = null;
-        let currentMarker = null;
 
         const colorScales = {
             income: (value, min, max) => {
                 const ratio = (value - min) / (max - min);
-                // Pre-defined gradient stops for maximum contrast
-                const stops = [
-                    { pos: 0.0, color: '#8B0000' },  // Deep red (lowest)
-                    { pos: 0.25, color: '#f46d43' }, //Orange-red
-                    { pos: 0.5, color: '#fdae61' },  // Orange
-                    { pos: 0.75, color: '#fee08b' }, // Yellow
-                    { pos: 1.0, color: '#013220' }   // Deep green (highest)
-                ];
-
-                // Interpolate between stops
-                for (let i = 0; i < stops.length - 1; i++) {
-                    if (ratio >= stops[i].pos && ratio <= stops[i + 1].pos) {
-                        const t = (ratio - stops[i].pos) / (stops[i + 1].pos - stops[i].pos);
-                        // Simple hex interpolation (you can make this more sophisticated)
-                        return `hsl(${0 + 120 * ratio}, 85%, ${50 + 15 * Math.sin(ratio * Math.PI)}%)`;
-                    }
-                }
-                return '#1a9850';
+                return `hsl(${0 + 120 * ratio}, 85%, ${50 + 15 * Math.sin(ratio * Math.PI)}%)`;
             },
-
             education: (value, min, max) => {
                 const ratio = (value - min) / (max - min);
-                // Dramatic white to deep purple
-                const stops = [
-                    { pos: 0.0, color: '#ffffff' }, // Pure white
-                    { pos: 0.25, color: '#e6ccff' }, // Very light purple
-                    { pos: 0.5, color: '#b366ff' },  // Medium purple
-                    { pos: 0.75, color: '#7a00e6' }, // Dark purple
-                    { pos: 1.0, color: '#2d004d' }   // Almost black purple
-                ];
-
                 return `hsl(275, ${40 + 60 * ratio}%, ${100 - 75 * ratio}%)`;
             },
-
             crime: (value, min, max) => {
                 const ratio = (value - min) / (max - min);
-                if (ratio < 0.33) {
-                    return '#67000d';
-                } else if (ratio < 0.66) {
-                    return '#fb6a4a';
-
-                } else {
-                    return '#fee0d2';
-                }
+                if (ratio < 0.33) return '#67000d';
+                if (ratio < 0.66) return '#fb6a4a';
+                return '#fee0d2';
             }
         };
-        // Initialize maps
+
         function initMaps() {
-            // LSOA Map
             lsoaMap = L.map('lsoa-map').setView([51.505, -0.09], 9);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap contributors',
                 maxZoom: 19
             }).addTo(lsoaMap);
 
-            // Property Map
-            propertyMap = L.map('property-map').setView([51.505, -0.09], 12);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors',
-                maxZoom: 19
-            }).addTo(propertyMap);
-
-            // Load LSOA data and GeoJSON
             loadLsoaData();
         }
 
         async function loadLsoaData() {
             try {
-                // Load socioeconomic data
                 const response = await fetch('/lsoa-data');
                 const data = await response.json();
                 socioData = data.socio_data;
                 dataStats = data.stats;
 
-                // Load GeoJSON (you need to provide this file)
                 const geojsonResponse = await fetch('/static/lsoa_boundaries.geojson');
                 const geojson = await geojsonResponse.json();
 
-                // Create the choropleth layer
                 lsoaLayer = L.geoJSON(geojson, {
                     style: styleLsoa,
                     onEachFeature: onEachLsoa
@@ -305,12 +395,6 @@
 
             } catch (error) {
                 console.error('Error loading LSOA data:', error);
-                // Fallback: Show a message on the map
-                lsoaMap.eachLayer(layer => {
-                    if (layer instanceof L.TileLayer) {
-                        layer.bindPopup('LSOA boundary data not loaded. Please add lsoa_boundaries.geojson file.').openPopup();
-                    }
-                });
             }
         }
 
@@ -318,8 +402,8 @@
             const lsoaCode = feature.properties.LSOA21CD;
             const data = socioData[lsoaCode];
 
-            let fillColor = '#cccccc';
-            let fillOpacity = 0.4;
+            let fillColor = '#e5e5ea';
+            let fillOpacity = 0.5;
 
             if (data && dataStats[currentLayer]) {
                 const value = data[currentLayer.charAt(0).toUpperCase() + currentLayer.slice(1)];
@@ -335,7 +419,7 @@
                 fillColor: fillColor,
                 weight: 1,
                 opacity: 1,
-                color: '#666',
+                color: '#9a9aa3',
                 fillOpacity: fillOpacity
             };
         }
@@ -345,7 +429,6 @@
             const data = socioData[lsoaCode];
 
             let popupContent = `<strong>LSOA: ${lsoaCode}</strong><br>`;
-
             if (data) {
                 popupContent += `
                     Income: £${data.Income.toLocaleString()}<br>
@@ -355,49 +438,26 @@
             } else {
                 popupContent += 'No socioeconomic data available';
             }
-
             layer.bindPopup(popupContent);
-
-            layer.on({
-                click: () => selectLsoa(lsoaCode, data, layer)
-            });
+            layer.on({ click: () => selectLsoa(lsoaCode, data, layer) });
         }
 
         function selectLsoa(lsoaCode, data, layer) {
-            selectedLsoa = lsoaCode;
-
-            // Update input field
             document.getElementById('lsoa').value = lsoaCode;
 
-            // Highlight selected LSOA
             if (lsoaLayer) {
-                lsoaLayer.eachLayer(l => {
-                    l.setStyle({ weight: 1, color: '#666' });
-                });
-                layer.setStyle({ weight: 3, color: '#007bff' });
+                lsoaLayer.eachLayer(l => l.setStyle({ weight: 1, color: '#9a9aa3' }));
+                layer.setStyle({ weight: 3, color: '#1656d1' });
             }
 
-            // Update info panel
             const detailsDiv = document.getElementById('selected-lsoa-details');
             if (data) {
                 detailsDiv.innerHTML = `
                     <strong>${lsoaCode}</strong><br>
                     Income: £${data.Income.toLocaleString()}<br>
                     Education: ${data.Education}<br>
-                    Crime Decile: ${data.Crime}<br>
-                    ${data.lat && data.lon ? ' a' : 'b'}
+                    Crime Decile: ${data.Crime}
                 `;
-
-                // Update property map to show LSOA location
-                if (data.lat && data.lon) {
-                    propertyMap.setView([data.lat, data.lon], 14);
-                    if (currentMarker) {
-                        propertyMap.removeLayer(currentMarker);
-                    }
-                    currentMarker = L.marker([data.lat, data.lon]).addTo(propertyMap)
-                        .bindPopup(`<strong>${lsoaCode}</strong><br>Selected LSOA`)
-                        .openPopup();
-                }
             } else {
                 detailsDiv.innerHTML = `<strong>${lsoaCode}</strong><br>No data available`;
             }
@@ -405,17 +465,10 @@
 
         function updateMapLayer() {
             const radios = document.getElementsByName('layer');
-            for (let radio of radios) {
-                if (radio.checked) {
-                    currentLayer = radio.value;
-                    break;
-                }
+            for (const radio of radios) {
+                if (radio.checked) { currentLayer = radio.value; break; }
             }
-
-            if (lsoaLayer) {
-                lsoaLayer.setStyle(styleLsoa);
-            }
-
+            if (lsoaLayer) lsoaLayer.setStyle(styleLsoa);
             updateLegend();
         }
 
@@ -424,20 +477,13 @@
             const stats = dataStats[currentLayer];
 
             if (!stats) {
-
-                legendDiv.innerHTML = '<strong>Legend</strong><br>Loading data...';
+                legendDiv.innerHTML = '<strong>Legend</strong>Loading data…';
                 return;
             }
 
-            const layerNames = {
-                income: 'Annual Income (£)',
-                education: 'Education Score',
-                crime: 'Crime Decile'
-            };
+            const layerNames = { income: 'Annual income (£)', education: 'Education score', crime: 'Crime decile' };
+            let legendHtml = `<strong>${layerNames[currentLayer]}</strong>`;
 
-            let legendHtml = `<strong>${layerNames[currentLayer]}</strong><br>`;
-
-            // Create gradient steps
             const steps = 5;
             for (let i = 0; i < steps; i++) {
                 const value = stats.min + (stats.max - stats.min) * (i / (steps - 1));
@@ -473,16 +519,13 @@
                 return;
             }
 
-            // Show loading
             document.getElementById('loading').style.display = 'block';
             document.getElementById('result').style.display = 'none';
 
             try {
                 const response = await fetch('/predict', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         LSOA21CD: lsoa,
                         Type: type,
@@ -492,32 +535,16 @@
 
                 const data = await response.json();
 
-                // Hide loading
                 document.getElementById('loading').style.display = 'none';
-
-                const resultDiv = document.getElementById('result');
-                resultDiv.style.display = 'block';
-                resultDiv.innerHTML = `
-                    <strong>Predicted Price:</strong> £${data.predicted_price.toLocaleString()}<br>
-                    <strong>Recommended Range:</strong> £${data.recommended_range[0].toLocaleString()} - £${data.recommended_range[1].toLocaleString()}<br>
-                    <strong>Socioeconomic Info:</strong><br>
-                    Income: £${data.socio.Income.toLocaleString()}<br>
-                    Education: ${data.socio.Education}<br>
-                    Crime Decile: ${data.socio.Crime}
-                `;
-
-                // Update property map
-                if (data.socio.lat && data.socio.lon) {
-                    propertyMap.setView([data.socio.lat, data.socio.lon], 14);
-
-                    if (currentMarker) {
-                        propertyMap.removeLayer(currentMarker);
-                    }
-
-                    currentMarker = L.marker([data.socio.lat, data.socio.lon]).addTo(propertyMap)
-                        .bindPopup(resultDiv.innerHTML)
-                        .openPopup();
-                }
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('result-price').textContent =
+                    `£${data.predicted_price.toLocaleString()}`;
+                document.getElementById('result-range').textContent =
+                    `Recommended range: £${data.recommended_range[0].toLocaleString()} – £${data.recommended_range[1].toLocaleString()}`;
+                document.getElementById('result-income').textContent =
+                    `£${data.socio.Income.toLocaleString()}`;
+                document.getElementById('result-education').textContent = data.socio.Education;
+                document.getElementById('result-crime').textContent = data.socio.Crime;
 
             } catch (error) {
                 document.getElementById('loading').style.display = 'none';
@@ -526,7 +553,6 @@
             }
         }
 
-        // Initialize everything when page loads
         document.addEventListener('DOMContentLoaded', initMaps);
     </script>
 </body>
